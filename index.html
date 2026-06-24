@@ -81,7 +81,7 @@ body{font-family:'Lato',sans-serif;background:#e0e0e0;min-height:100vh;display:f
       <div class="main">
         <div class="filters">
           <div class="sel-wrap">
-            <select aria-label="Audience segment" onchange="replayVenn();requestAnimationFrame(replayCharts);replayInsights()">
+            <select aria-label="Audience segment" onchange="switchAudience(this.value)">
               <option>Acme Burger Co</option>
               <option>Globex Auto</option>
               <option>Initech Pharma</option>
@@ -124,20 +124,20 @@ body{font-family:'Lato',sans-serif;background:#e0e0e0;min-height:100vh;display:f
                   <g class="venn-left">
                     <circle cx="108" cy="72" r="84" fill="#7B9EC8" opacity=".85"/>
                     <text x="70" y="66" text-anchor="middle" font-family="Lato,sans-serif" font-size="11" fill="rgba(0,0,0,.7)">Cord cutter</text>
-                    <text x="70" y="85" text-anchor="middle" font-family="Lato,sans-serif" font-size="18" font-weight="700" fill="rgba(0,0,0,.88)">42%</text>
+                    <text id="venn-cord-pct" x="70" y="85" text-anchor="middle" font-family="Lato,sans-serif" font-size="18" font-weight="700" fill="rgba(0,0,0,.88)">42%</text>
                   </g>
                   <g class="venn-right">
                     <circle cx="212" cy="72" r="84" fill="#E8A96A" opacity=".85"/>
                     <text x="250" y="66" text-anchor="middle" font-family="Lato,sans-serif" font-size="11" fill="rgba(0,0,0,.7)">Linear</text>
-                    <text x="250" y="85" text-anchor="middle" font-family="Lato,sans-serif" font-size="18" font-weight="700" fill="rgba(0,0,0,.88)">15%</text>
+                    <text id="venn-linear-pct" x="250" y="85" text-anchor="middle" font-family="Lato,sans-serif" font-size="18" font-weight="700" fill="rgba(0,0,0,.88)">15%</text>
                   </g>
                   <g class="venn-intersect">
                     <circle cx="212" cy="72" r="84" fill="none" clip-path="url(#ctvClip)"/>
                     <text x="160" y="66" text-anchor="middle" font-family="Lato,sans-serif" font-size="11" fill="rgba(0,0,0,.7)">Combined</text>
-                    <text x="160" y="85" text-anchor="middle" font-family="Lato,sans-serif" font-size="18" font-weight="700" fill="rgba(0,0,0,.88)">43%</text>
+                    <text id="venn-combined-pct" x="160" y="85" text-anchor="middle" font-family="Lato,sans-serif" font-size="18" font-weight="700" fill="rgba(0,0,0,.88)">43%</text>
                   </g>
                   <g class="venn-metric">
-                    <text x="160" y="232" text-anchor="end" font-family="Lato,sans-serif" font-size="38" font-weight="700" fill="rgba(0,0,0,.4)">24.6</text>
+                    <text id="venn-metric-num" x="160" y="232" text-anchor="end" font-family="Lato,sans-serif" font-size="38" font-weight="700" fill="rgba(0,0,0,.4)">24.6</text>
                     <text x="165" y="230" text-anchor="start" font-family="Lato,sans-serif" font-size="22" font-weight="700" fill="rgba(0,0,0,.4)">M HHs</text>
                   </g>
                 </svg>
@@ -192,6 +192,11 @@ body{font-family:'Lato',sans-serif;background:#e0e0e0;min-height:100vh;display:f
 
 <script>
 function replayVenn() {
+  const d = audienceData[currentAudience];
+  document.getElementById('venn-cord-pct').textContent = d.cord;
+  document.getElementById('venn-linear-pct').textContent = d.linear;
+  document.getElementById('venn-combined-pct').textContent = d.combined;
+  document.getElementById('venn-metric-num').textContent = d.metric;
   document.querySelectorAll('.venn-left,.venn-right,.venn-intersect,.venn-metric').forEach(el => {
     el.getAnimations().forEach(a => { a.cancel(); a.play(); });
   });
@@ -213,21 +218,48 @@ function setTab(el, key) {
 <script>
 const fontTick = {family:"'Lato',sans-serif",size:10,weight:'bold'};
 
-const barReal = [[5,9.5,7.5,4,5,10.5,8.5],[5,7,6,3,4,8.5,6.5]];
-const horizReal = [43,33,38,15,19,14,11,22,27,16,18,13];
+const audienceData = {
+  'Acme Burger Co': {
+    bar:[[5,9.5,7.5,4,5,10.5,8.5],[5,7,6,3,4,8.5,6.5]],
+    horiz:[43,33,38,15,19,14,11,22,27,16,18,13],
+    cord:'42%',linear:'15%',combined:'43%',metric:'24.6'
+  },
+  'Globex Auto': {
+    bar:[[6,11,8,5,7,13,10],[3,5,4,2,4,6,5]],
+    horiz:[38,28,42,18,22,10,15,19,24,20,14,11],
+    cord:'38%',linear:'19%',combined:'38%',metric:'18.2'
+  },
+  'Initech Pharma': {
+    bar:[[4,8,6,3,5,9,7],[6,8,7,4,5,9,7]],
+    horiz:[35,40,30,20,18,16,12,15,22,18,10,9],
+    cord:'35%',linear:'22%',combined:'40%',metric:'31.4'
+  }
+};
+let currentAudience = 'Acme Burger Co';
+
+function switchAudience(val) {
+  currentAudience = val;
+  replayVenn();
+  requestAnimationFrame(replayCharts);
+  replayInsights();
+}
+
+const barReal = audienceData[currentAudience].bar;
+const horizReal = audienceData[currentAudience].horiz;
 const zeros7 = [0,0,0,0,0,0,0];
 const zeros12 = [0,0,0,0,0,0,0,0,0,0,0,0];
 
 function replayCharts() {
+  const d = audienceData[currentAudience];
   barChartInst.data.datasets[0].data = zeros7.slice();
   barChartInst.data.datasets[1].data = zeros7.slice();
   barChartInst.update('none');
-  barChartInst.data.datasets[0].data = barReal[0];
-  barChartInst.data.datasets[1].data = barReal[1];
+  barChartInst.data.datasets[0].data = d.bar[0];
+  barChartInst.data.datasets[1].data = d.bar[1];
   barChartInst.update();
   horizChartInst.data.datasets[0].data = zeros12.slice();
   horizChartInst.update('none');
-  horizChartInst.data.datasets[0].data = horizReal;
+  horizChartInst.data.datasets[0].data = d.horiz;
   horizChartInst.update();
 }
 
